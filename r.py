@@ -14,6 +14,7 @@ class EndingOffers:
 
     def __init__(self):
         self.url_for_ending_offers = "https://r.pl/koncoweczka"
+        self.email_template_file = "email_template.html"
 
 
     def scrape_offers(self):
@@ -45,26 +46,45 @@ class EndingOffers:
         return offers
 
 
+    def generate_html_message(self, offers):
+        with open(self.email_template_file, 'r') as file:
+            html_template = file.read()
+
+        offers_html = ""
+        for offer in offers:
+            offer_html = """
+            <div class="offer">
+                <h2>{header}</h2>
+                <p>Location: {location}</p>
+                <p>Price: {price} PLN</p>
+                <p>Link: <a href="{link}">View Offer</a></p>
+                <hr>
+            </div>
+            """.format(
+                header=offer['header'],
+                location=offer['location'],
+                price=offer['price'],
+                link=offer['link']
+            )
+            offers_html += offer_html
+
+        message = html_template.replace('{{offers}}', offers_html)
+        return message
+
+
     def send_email(self, sender, password, recipient):
         offers = self.scrape_offers()
+        html_message = self.generate_html_message(offers)
 
         message = MIMEMultipart()
         message['From'] = sender
         message['To'] = recipient
 
         current_date = datetime.now().strftime('%Y-%m-%d')
-        subject = f"Ending Offers - {current_date}"
+        subject = f"Rainbow Ending Offers - {current_date}"
         message['Subject'] = Header(subject, 'utf-8')
 
-        body = "<h1>Rainbow Ending Offers</h1>"
-        for offer in offers:
-            body += f"<h2>{offer['header']}</h2>"
-            body += f"<p>Location: {offer['location']}</p>"
-            body += f"<p>Price: {offer['price']} PLN</p>"
-            body += f"<p>Link: <a href='{offer['link']}'>View Offer</a></p>"
-            body += "<hr>"
-
-        message.attach(MIMEText(body, 'html'))
+        message.attach(MIMEText(html_message, 'html'))
 
         try:
             server = smtplib.SMTP('smtp.gmail.com', 587)
@@ -76,9 +96,9 @@ class EndingOffers:
         except Exception as e:
             print(f"Error sending email: {e}")
 
+
 with open('credentials.json') as json_file:
     credentials = json.load(json_file)
-
 
 ending = EndingOffers()
 ending.send_email(credentials['sender'], credentials['password'], credentials['recipient'])
