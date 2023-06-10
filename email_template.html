@@ -1,11 +1,14 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link href="https://fonts.googleapis.com/css?family=Roboto:400,700&display=swap" rel="stylesheet">
     <title>New Rainbow Ending Offers</title>
     <style>
         body {
-            font-family: Arial, sans-serif;
+            font-family: 'Roboto', sans-serif;
             line-height: 1.6;
             background-color: #f4f4f4;
             margin: 0;
@@ -14,6 +17,8 @@
 
         .container {
             padding: 20px;
+            max-width: 800px;
+            margin: 0 auto;
         }
 
         .offer {
@@ -22,6 +27,7 @@
             padding: 20px;
             border: 1px solid #ddd;
             border-radius: 5px;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
         }
 
         .offer h2 {
@@ -34,8 +40,13 @@
         }
 
         .offer a {
-            color: #06C;
+            color: rgb(0, 129, 189);
             text-decoration: none;
+            transition: color 0.3s ease-in-out;
+        }
+
+        .offer a:hover {
+            color: #0dce06;
         }
 
         .header {
@@ -43,6 +54,7 @@
             padding: 30px 0;
             background-color: #333;
             color: #fff;
+            margin-bottom: 30px;
         }
 
         .automatically-generated {
@@ -52,6 +64,7 @@
         }
     </style>
 </head>
+
 <body>
     <div class="header">
         <h1>New Rainbow Ending Offers</h1>
@@ -61,4 +74,5 @@
         {{offers}}
     </div>
 </body>
+
 </html>
