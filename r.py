@@ -20,9 +20,10 @@ class EndingOffers:
         """
         Initialize EndingOffers class with the default URLs and filenames.
         """
+        self.base_directory = "/home/home/r.pl-promo-hunter/"
         self.url_for_ending_offers = "https://r.pl/koncoweczka"
-        self.email_template_file = "email_template.html"
-        self.stored_offers_file = "stored_offers.json"
+        self.email_template_file = os.path.join(self.base_directory, "email_template.html")
+        self.stored_offers_file = os.path.join(self.base_directory, "stored_offers.json")
 
     def scrape_offers(self):
         """
@@ -137,11 +138,8 @@ class EndingOffers:
 
 
 def setup_logging():
-    """
-    Setup logging configuration.
-    """
     logging.basicConfig(
-        filename="ending_offers.log",
+        filename="/home/home/r.pl-promo-hunter/ending_offers.log",
         level=logging.INFO,
         format="%(asctime)s:%(levelname)s:%(message)s"
     )
@@ -154,7 +152,7 @@ def main():
     setup_logging()
 
     # Load email credentials
-    with open('credentials.json') as json_file:
+    with open('/home/home/r.pl-promo-hunter/credentials.json') as json_file:
         credentials = json.load(json_file)
 
     ending_offers = EndingOffers()

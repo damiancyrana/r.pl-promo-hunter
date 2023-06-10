@@ -29,3 +29,4 @@ build/
 credentials.json
 stored_offers.json
 ending_offers.log
+cron.log
