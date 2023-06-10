@@ -1,5 +1,7 @@
+import os
 import json
 import smtplib
+import logging
 import requests
 from bs4 import BeautifulSoup
 from datetime import datetime
@@ -10,21 +12,25 @@ from email.mime.multipart import MIMEMultipart
 
 
 class EndingOffers:
-    """A class to scrape and send offers from https://r.pl/koncoweczka via email"""
+    """
+    Class for scraping ending offers and sending them via email.
+    """
 
     def __init__(self):
+        """
+        Initialize EndingOffers class with the default URLs and filenames.
+        """
         self.url_for_ending_offers = "https://r.pl/koncoweczka"
         self.email_template_file = "email_template.html"
-
+        self.stored_offers_file = "stored_offers.json"
 
     def scrape_offers(self):
+        """
+        Scrape the offers from the URL and return a list of dictionaries with offer details.
+        """
         response = requests.get(self.url_for_ending_offers)
         soup = BeautifulSoup(response.text, 'html.parser')
-
-        # Find all div elements with class "bloczek__wrapper"
         wrappers = soup.find_all('div', class_='bloczek__wrapper')
-
-        # List to store the offers
         offers = []
 
         for wrapper in wrappers:
@@ -33,6 +39,7 @@ class EndingOffers:
             price_element = wrapper.find('span', class_='bloczek__cena')
             location_element = wrapper.find('span', class_='bloczek__lokalizacja--text')
 
+            # Check if all required elements are present
             if header_element and link_element and price_element and location_element:
                 absolute_link = urljoin(self.url_for_ending_offers, link_element['href'])
                 offer = {
@@ -45,35 +52,44 @@ class EndingOffers:
 
         return offers
 
-
     def generate_html_message(self, offers):
+        """
+        Generate HTML message with offer details.
+
+        Args:
+            offers (list): List of dictionaries with offer details.
+
+        Returns:
+            str: HTML message string.
+        """
         with open(self.email_template_file, 'r') as file:
             html_template = file.read()
 
         offers_html = ""
         for offer in offers:
-            offer_html = """
+            offer_html = f"""
             <div class="offer">
-                <h2>{header}</h2>
-                <p>Location: {location}</p>
-                <p>Price: {price} PLN</p>
-                <p>Link: <a href="{link}">View Offer</a></p>
+                <h2>{offer['header']}</h2>
+                <p>Location: {offer['location']}</p>
+                <p>Price: {offer['price']} PLN</p>
+                <p>Link: <a href="{offer['link']}">View Offer</a></p>
                 <hr>
             </div>
-            """.format(
-                header=offer['header'],
-                location=offer['location'],
-                price=offer['price'],
-                link=offer['link']
-            )
+            """
             offers_html += offer_html
 
-        message = html_template.replace('{{offers}}', offers_html)
-        return message
+        return html_template.replace('{{offers}}', offers_html)
 
+    def send_email(self, sender, password, recipient, offers):
+        """
+        Send an email with offer details.
 
-    def send_email(self, sender, password, recipient):
-        offers = self.scrape_offers()
+        Args:
+            sender (str): Email sender.
+            password (str): Email sender password.
+            recipient (str): Email recipient.
+            offers (list): List of dictionaries with offer details.
+        """
         html_message = self.generate_html_message(offers)
 
         message = MIMEMultipart()
@@ -86,19 +102,78 @@ class EndingOffers:
 
         message.attach(MIMEText(html_message, 'html'))
 
+        # Try to send the email
         try:
             server = smtplib.SMTP('smtp.gmail.com', 587)
             server.starttls()
             server.login(sender, password)
             server.sendmail(sender, recipient, message.as_string())
             server.quit()
-            print("Email sent successfully!")
+            logging.info("Email sent successfully!")
         except Exception as e:
-            print(f"Error sending email: {e}")
+            logging.error(f"Error sending email: {e}")
+
+    def get_stored_offers(self):
+        """
+        Get the previously stored offers.
+
+        Returns:
+            list: List of dictionaries with previously stored offers.
+        """
+        if os.path.exists(self.stored_offers_file):
+            with open(self.stored_offers_file, 'r') as file:
+                return json.load(file)
+        return []
+
+    def store_offers(self, offers):
+        """
+        Store the current offers to a file.
+
+        Args:
+            offers (list): List of dictionaries with current offers.
+        """
+        with open(self.stored_offers_file, 'w') as file:
+            json.dump(offers, file)
 
 
-with open('credentials.json') as json_file:
-    credentials = json.load(json_file)
+def setup_logging():
+    """
+    Setup logging configuration.
+    """
+    logging.basicConfig(
+        filename="ending_offers.log",
+        level=logging.INFO,
+        format="%(asctime)s:%(levelname)s:%(message)s"
+    )
 
-ending = EndingOffers()
-ending.send_email(credentials['sender'], credentials['password'], credentials['recipient'])
+
+def main():
+    """
+    Main function for scraping and sending offers via email.
+    """
+    setup_logging()
+
+    # Load email credentials
+    with open('credentials.json') as json_file:
+        credentials = json.load(json_file)
+
+    ending_offers = EndingOffers()
+
+    # Scrape the new offers
+    new_offers = ending_offers.scrape_offers()
+
+    # Load the last sent offers
+    stored_offers = ending_offers.get_stored_offers()
+
+    # Check if there are new offers and send email if needed
+    if new_offers != stored_offers:
+        ending_offers.send_email(
+            credentials['sender'], credentials['password'], credentials['recipient'], new_offers
+        )
+        ending_offers.store_offers(new_offers)
+    else:
+        logging.info("Email not sent due to not found new offers")
+
+
+if __name__ == "__main__":
+    main()

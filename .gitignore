@@ -25,5 +25,7 @@ build/
 *.userosscache
 *.sln.docstates
 
-# Ignore files with credentials
+# Ignore files
 credentials.json
+stored_offers.json
+ending_offers.log
