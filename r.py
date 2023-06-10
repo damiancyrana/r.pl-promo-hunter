@@ -12,23 +12,14 @@ from email.mime.multipart import MIMEMultipart
 
 
 class EndingOffers:
-    """
-    Class for scraping ending offers and sending them via email.
-    """
 
     def __init__(self):
-        """
-        Initialize EndingOffers class with the default URLs and filenames.
-        """
         self.base_directory = "/home/home/r.pl-promo-hunter/"
         self.url_for_ending_offers = "https://r.pl/koncoweczka"
         self.email_template_file = os.path.join(self.base_directory, "email_template.html")
         self.stored_offers_file = os.path.join(self.base_directory, "stored_offers.json")
 
     def scrape_offers(self):
-        """
-        Scrape the offers from the URL and return a list of dictionaries with offer details.
-        """
         response = requests.get(self.url_for_ending_offers)
         soup = BeautifulSoup(response.text, 'html.parser')
         wrappers = soup.find_all('div', class_='bloczek__wrapper')
@@ -40,7 +31,6 @@ class EndingOffers:
             price_element = wrapper.find('span', class_='bloczek__cena')
             location_element = wrapper.find('span', class_='bloczek__lokalizacja--text')
 
-            # Check if all required elements are present
             if header_element and link_element and price_element and location_element:
                 absolute_link = urljoin(self.url_for_ending_offers, link_element['href'])
                 offer = {
@@ -53,26 +43,24 @@ class EndingOffers:
 
         return offers
 
-    def generate_html_message(self, offers):
-        """
-        Generate HTML message with offer details.
-
-        Args:
-            offers (list): List of dictionaries with offer details.
-
-        Returns:
-            str: HTML message string.
-        """
+    def generate_html_message(self, offers, new_offer_headers, price_changed_headers):
         with open(self.email_template_file, 'r') as file:
             html_template = file.read()
 
         offers_html = ""
         for offer in offers:
+            header_color = '#333'
+            price_color = '#333'
+            if offer['header'] in new_offer_headers:
+                header_color = 'red'
+            if offer['header'] in price_changed_headers:
+                price_color = 'red'
+
             offer_html = f"""
             <div class="offer">
-                <h2>{offer['header']}</h2>
+                <h2 style="color: {header_color};">{offer['header']}</h2>
                 <p>Location: {offer['location']}</p>
-                <p>Price: {offer['price']} PLN</p>
+                <p style="color: {price_color};">Price: {offer['price']} PLN</p>
                 <p>Link: <a href="{offer['link']}">View Offer</a></p>
                 <hr>
             </div>
@@ -81,17 +69,8 @@ class EndingOffers:
 
         return html_template.replace('{{offers}}', offers_html)
 
-    def send_email(self, sender, password, recipient, offers):
-        """
-        Send an email with offer details.
-
-        Args:
-            sender (str): Email sender.
-            password (str): Email sender password.
-            recipient (str): Email recipient.
-            offers (list): List of dictionaries with offer details.
-        """
-        html_message = self.generate_html_message(offers)
+    def send_email(self, sender, password, recipient, offers, new_offer_headers, price_changed_headers):
+        html_message = self.generate_html_message(offers, new_offer_headers, price_changed_headers)
 
         message = MIMEMultipart()
         message['From'] = sender
@@ -103,7 +82,6 @@ class EndingOffers:
 
         message.attach(MIMEText(html_message, 'html'))
 
-        # Try to send the email
         try:
             server = smtplib.SMTP('smtp.gmail.com', 587)
             server.starttls()
@@ -115,26 +93,15 @@ class EndingOffers:
             logging.error(f"Error sending email: {e}")
 
     def get_stored_offers(self):
-        """
-        Get the previously stored offers.
-
-        Returns:
-            list: List of dictionaries with previously stored offers.
-        """
         if os.path.exists(self.stored_offers_file):
             with open(self.stored_offers_file, 'r') as file:
                 return json.load(file)
-        return []
+        return {}
 
     def store_offers(self, offers):
-        """
-        Store the current offers to a file.
-
-        Args:
-            offers (list): List of dictionaries with current offers.
-        """
+        offers_dict = {offer['header']: offer for offer in offers}
         with open(self.stored_offers_file, 'w') as file:
-            json.dump(offers, file)
+            json.dump(offers_dict, file)
 
 
 def setup_logging():
@@ -146,31 +113,41 @@ def setup_logging():
 
 
 def main():
-    """
-    Main function for scraping and sending offers via email.
-    """
     setup_logging()
 
-    # Load email credentials
     with open('/home/home/r.pl-promo-hunter/credentials.json') as json_file:
         credentials = json.load(json_file)
 
     ending_offers = EndingOffers()
 
-    # Scrape the new offers
     new_offers = ending_offers.scrape_offers()
+
+    # Check if stored_offers_file exists, if not, consider it the first run
+    first_run = not os.path.exists(ending_offers.stored_offers_file)
 
     # Load the last sent offers
     stored_offers = ending_offers.get_stored_offers()
 
-    # Check if there are new offers and send email if needed
-    if new_offers != stored_offers:
+    new_offer_headers = set()
+    price_changed_headers = set()
+
+    for offer in new_offers:
+        header = offer['header']
+        if not first_run:
+            if header not in stored_offers:
+                new_offer_headers.add(header)
+            elif offer['price'] != stored_offers[header]['price']:
+                price_changed_headers.add(header)
+
+    # Send email if there are new offers or price changes, or if it's the first run
+    if new_offer_headers or price_changed_headers or first_run:
         ending_offers.send_email(
-            credentials['sender'], credentials['password'], credentials['recipient'], new_offers
+            credentials['sender'], credentials['password'], credentials['recipient'],
+            new_offers, new_offer_headers, price_changed_headers
         )
         ending_offers.store_offers(new_offers)
     else:
-        logging.info("Email not sent due to not found new offers")
+        logging.info("Email not sent due to no new offers or price changes")
 
 
 if __name__ == "__main__":
