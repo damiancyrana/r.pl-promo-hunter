@@ -19,6 +19,7 @@ class EndingOffers:
         self.email_template_file = os.path.join(self.base_directory, "email_template.html")
         self.stored_offers_file = os.path.join(self.base_directory, "stored_offers.json")
 
+
     def scrape_offers(self):
         response = requests.get(self.url_for_ending_offers)
         soup = BeautifulSoup(response.text, 'html.parser')
@@ -43,7 +44,8 @@ class EndingOffers:
 
         return offers
 
-    def generate_html_message(self, offers, new_offer_headers, price_changed_headers):
+
+    def generate_html_message(self, offers, new_offer_headers, price_changed_headers, stored_offers):
         with open(self.email_template_file, 'r') as file:
             html_template = file.read()
 
@@ -51,16 +53,24 @@ class EndingOffers:
         for offer in offers:
             header_color = '#333'
             price_color = '#333'
+            old_price = ''
+            price_difference_html = ''
             if offer['header'] in new_offer_headers:
                 header_color = 'red'
             if offer['header'] in price_changed_headers:
-                price_color = 'red'
+                old_price = stored_offers[offer['header']]['price']
+                if float(offer['price']) < float(old_price):
+                    price_color = 'green'
+                    price_difference_html = f""" <span style="color: {price_color};">(was {old_price} PLN)</span>"""
+                elif float(offer['price']) > float(old_price):
+                    price_color = 'red'
+                    price_difference_html = f""" <span style="color: {price_color};">(was {old_price} PLN)</span>"""
 
             offer_html = f"""
             <div class="offer">
                 <h2 style="color: {header_color};">{offer['header']}</h2>
                 <p>Location: {offer['location']}</p>
-                <p style="color: {price_color};">Price: {offer['price']} PLN</p>
+                <p>Price: {offer['price']} PLN{price_difference_html}</p>
                 <p>Link: <a href="{offer['link']}">View Offer</a></p>
                 <hr>
             </div>
@@ -69,8 +79,9 @@ class EndingOffers:
 
         return html_template.replace('{{offers}}', offers_html)
 
-    def send_email(self, sender, password, recipient, offers, new_offer_headers, price_changed_headers):
-        html_message = self.generate_html_message(offers, new_offer_headers, price_changed_headers)
+
+    def send_email(self, sender, password, recipient, offers, new_offer_headers, price_changed_headers, stored_offers):
+        html_message = self.generate_html_message(offers, new_offer_headers, price_changed_headers, stored_offers)
 
         message = MIMEMultipart()
         message['From'] = sender
@@ -92,11 +103,13 @@ class EndingOffers:
         except Exception as e:
             logging.error(f"Error sending email: {e}")
 
+
     def get_stored_offers(self):
         if os.path.exists(self.stored_offers_file):
             with open(self.stored_offers_file, 'r') as file:
                 return json.load(file)
         return {}
+
 
     def store_offers(self, offers):
         offers_dict = {offer['header']: offer for offer in offers}
@@ -143,7 +156,7 @@ def main():
     if new_offer_headers or price_changed_headers or first_run:
         ending_offers.send_email(
             credentials['sender'], credentials['password'], credentials['recipient'],
-            new_offers, new_offer_headers, price_changed_headers
+            new_offers, new_offer_headers, price_changed_headers, stored_offers
         )
         ending_offers.store_offers(new_offers)
     else:
