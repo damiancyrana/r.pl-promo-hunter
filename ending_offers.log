@@ -1,0 +1,32 @@
+2023-06-13 18:59:21,218:INFO:Email not sent due to no new offers or price changes
+2023-06-13 19:00:03,040:INFO:Email not sent due to no new offers or price changes
+2023-06-13 19:15:02,999:INFO:Email not sent for Happy Hours due to no new offers or price changes
+2023-06-13 19:15:04,590:INFO:Email sent successfully!
+2023-06-13 19:27:55,983:INFO:Email sent successfully!
+2023-06-13 19:30:31,395:INFO:Email not sent due to no new offers or price changes
+2023-06-13 19:30:33,071:INFO:Email sent successfully!
+2023-06-13 19:35:45,197:INFO:Email sent successfully!
+2023-06-13 19:35:46,949:INFO:Email sent successfully!
+2023-06-13 19:40:48,354:INFO:Email sent successfully!
+2023-06-13 19:40:50,031:INFO:Email sent successfully!
+2023-06-13 22:08:28,229:INFO:Email sent successfully!
+2023-06-13 22:14:34,378:INFO:Email not sent due to no new offers or price changes
+2023-06-13 22:15:17,935:INFO:Email not sent due to no new offers or price changes
+2023-06-13 22:15:36,228:INFO:Email sent successfully!
+2023-06-13 22:15:37,641:INFO:Email sent successfully!
+2023-06-13 22:18:44,495:INFO:Email sent successfully!
+2023-06-13 22:18:45,759:INFO:Email sent successfully!
+2023-06-13 22:23:41,930:INFO:Email sent successfully!
+2023-06-13 22:23:41,931:INFO:Happy Hours email not sent due to being outside the Mon-Fri 13:00-15:00 time window
+2023-06-13 22:23:43,260:INFO:Email sent successfully!
+2023-06-13 22:27:17,398:INFO:Email sent successfully!
+2023-06-13 22:27:17,399:INFO:Happy Hours email not sent due to being outside the Mon-Fri 13:00-15:00 time window
+2023-06-13 22:27:18,683:INFO:Email sent successfully!
+2023-06-13 22:27:20,350:INFO:Email sent successfully!
+2023-06-13 22:28:02,411:INFO:Email sent successfully!
+2023-06-13 22:28:02,412:INFO:Happy Hours email not sent due to being outside the Mon-Fri 13:00-15:00 time window
+2023-06-13 22:28:03,802:INFO:Email sent successfully!
+2023-06-13 22:28:57,646:INFO:Email sent successfully!
+2023-06-13 22:28:58,827:INFO:Email sent successfully!
+2023-06-13 22:29:52,608:INFO:Email sent successfully!
+2023-06-13 22:29:53,732:INFO:Email sent successfully!
