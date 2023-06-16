@@ -27,6 +27,7 @@ build/
 
 # Ignore files
 credentials.json
-stored_offers.json
-ending_offers.log
+stored_ending_offers.json
+stored_happy_hours_offers.json
 cron.log
+ending_offers.log
