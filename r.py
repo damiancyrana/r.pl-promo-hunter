@@ -189,7 +189,7 @@ def setup_logging():
 def main():
     setup_logging()
 
-    with open('credentials.json') as json_file:
+    with open('/home/home/r.pl-promo-hunter/credentials.json') as json_file:
         credentials = json.load(json_file)
 
     ending_offers = EndingOffers()

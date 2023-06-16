@@ -30,3 +30,4 @@ credentials.json
 stored_happy_hours_offers.json
 stored_ending_offers.json
 cron.log
+ending_offers.log
