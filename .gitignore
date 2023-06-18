@@ -29,3 +29,9 @@ build/
 credentials.json
 stored_offers.json
 ending_offers.log
+.gitignore
+cron.log
+
+stored_ending_offers.json
+stored_happy_hours_offers.json
+stored_sunday_occasion_fair_offers.json

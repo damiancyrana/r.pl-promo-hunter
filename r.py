@@ -178,6 +178,101 @@ class HappyHours(RainbowOffers):
             logging.error(f"Error sending email: {e}")
 
 
+
+class SundayOccasionFair:
+    def __init__(self):
+        self.url = 'https://r.pl/niedzielny-kiermasz-okazji'
+        self.output_file = 'stored_sunday_occasion_fair_offers.json'
+    
+    def scrape_offers(self):
+        response = requests.get(self.url)
+        soup = BeautifulSoup(response.text, 'html.parser')
+
+        offers_div = soup.find('div', class_='kiermasz-bloczki')
+        offers = offers_div.find_all('div', class_='r-card r-card--row r-card--border-small r-card--border r-bloczek r-bloczek--bloczek-szukaj n-bloczek__bloczek')
+
+        scraped_offers = []
+
+        for offer in offers:
+            offer_details = offer.find('div', class_='r-card__body r-bloczek__body')
+
+            # Zaktualizowane wyszukiwanie elementu nagłówka
+            header_element = offer_details.find('span', class_='r-typography r-typography--secondary r-typography--bold r-typography--black r-typography__h4 r-typography--one-line-ellipsis r-bloczek-tytul r-bloczek-naglowek__tytul')
+            header = header_element.text.strip() if header_element is not None else "Not available"
+
+            location_element = offer_details.find('span', class_='r-bloczek-lokalizacja')
+            location = location_element.text if location_element is not None else "Not available"
+
+            price_element = offer_details.find('span', class_='r-bloczek-cena__aktualna')
+            price = price_element.text if price_element is not None else "Not available"
+
+            link_element = offer.find('a', href=True)
+            link = link_element['href'] if link_element is not None else "Not available"
+
+            scraped_offers.append({
+                'header': header,
+                'location': location,
+                'price': price,
+                'link': link
+            })
+
+        return scraped_offers
+
+    def prepare_email_content(self, offers):
+        # Otwórz i przeczytaj plik szablonu e-mail
+        with open('email_template.html', 'r') as file:
+            template = file.read()
+
+        # Wypełnij szablon danymi
+        offers_html = ""
+        for offer in offers:
+            offers_html += f"""
+            <div class="offer">
+                <h2>{offer['header']}</h2>
+                <p>Location: {offer['location']}</p>
+                <p>Price: {offer['price']}</p>
+                <a href="{offer['link']}">Link to offer</a>
+            </div>
+            """
+
+        # Wypełnij szablon treścią
+        email_content = template.replace("{{offers}}", offers_html)
+
+        return email_content
+
+    def send_email(self, sender, password, recipient, offers):
+        # Przygotuj treść e-maila za pomocą szablonu
+        email_content = self.prepare_email_content(offers)
+        
+        # Ustaw nagłówki wiadomości
+        msg = MIMEMultipart()
+        msg['From'] = sender
+        msg['To'] = recipient
+        msg['Subject'] = 'New Sunday Occasion Fair Offers'
+        
+        # Dodaj treść e-maila
+        msg.attach(MIMEText(email_content, 'html'))
+        
+        # Wysyłanie e-maila
+        with smtplib.SMTP('smtp.gmail.com', 587) as server:
+            server.starttls()
+            server.login(sender, password)
+            server.send_message(msg)
+
+
+    def get_and_send_offers(self, sender, password, recipient):
+        offers = self.scrape_offers()
+
+        # Save the scraped offers to a JSON file
+        with open(self.output_file, 'w') as file:
+            json.dump(offers, file)
+
+        # Send the offers via email
+        self.send_email(sender, password, recipient, offers)
+
+
+
+
 def setup_logging():
     logging.basicConfig(
         filename="ending_offers.log",
@@ -244,6 +339,28 @@ def main():
             new_happy_hours_offers, new_happy_hours_offer_headers, set(), stored_happy_hours_offers
         )
         happy_hours.store_offers(new_happy_hours_offers)
+
+
+
+    # Pobierz obecny dzień tygodnia (0 - poniedziałek, 1 - wtorek, ..., 6 - niedziela)
+    current_weekday = datetime.now().weekday()
+    
+    # Sprawdź, czy obecny dzień tygodnia to niedziela
+    if current_weekday == 6:
+        setup_logging()
+
+        with open('/home/home/r.pl-promo-hunter/credentials.json') as f:
+            credentials = json.load(f)
+
+        sender = credentials['sender']
+        password = credentials['password']
+        recipient = credentials['recipient']
+
+        # Pobieranie i wysyłanie ofert
+        sunday_occasion_fair = SundayOccasionFair()
+        sunday_occasion_fair.get_and_send_offers(sender, password, recipient)
+    else:
+        print("Today is not Sunday. The script will not scrape offers.")
 
 
 if __name__ == "__main__":
